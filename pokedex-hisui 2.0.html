@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pokédex de Hisui</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,640&display=swap" rel="stylesheet" />
+<style>
+  :root { --paper:#f4efe4; --ink:#3f4d5c; --navy:#3e6278; --gold:#c6b27a; --tape:#f6e7c4; --line:#e4dccb; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; font-family:"Outfit",system-ui,sans-serif; color:var(--ink); background:
+    radial-gradient(700px 420px at 0% 0%, color-mix(in srgb, var(--gold) 28%, transparent), transparent 55%),
+    linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--paper) 78%, #d9c7a2)); }
+  .favorito { display:flex; align-items:center; gap:8px; margin-top:6px; font-weight:800; color:#8d7048; }
+  .favorito img { width:42px; height:42px; object-fit:contain; }
+  button, input { font:inherit; }
+  button { cursor:pointer; }
+  button:focus-visible, input:focus-visible { outline:3px solid #8eb0c4; outline-offset:2px; }
+  #intro { position:fixed; inset:0; z-index:20; display:grid; place-items:center; background:radial-gradient(520px 400px at 50% 46%, rgba(230,201,141,.28), transparent 62%), #1b2436; transition:opacity .7s ease; }
+  #intro.hide { opacity:0; pointer-events:none; }
+  #intro.shake { animation:shake .7s linear; }
+  @keyframes shake { 0%,100%{transform:none} 20%{transform:translate(-7px,3px)} 40%{transform:translate(8px,-4px)} 60%{transform:translate(-4px,2px)} 80%{transform:translate(3px,-2px)} }
+  .destello,.rayos { position:absolute; inset:0; pointer-events:none; opacity:0; }
+  #intro.boom .destello { opacity:1; background:radial-gradient(circle at 50% 50%, #fff 0%, #fff1c4 18%, #f0c27a 36%, transparent 70%); animation:flash .9s ease forwards; }
+  @keyframes flash { 0%{opacity:0} 18%{opacity:1} 100%{opacity:0} }
+  #intro.boom .rayos { opacity:1; animation:rayos 1.2s ease forwards; background:repeating-conic-gradient(from 0deg, transparent 0 8deg, rgba(255,236,190,.5) 9deg 11deg, transparent 12deg 20deg); mask:radial-gradient(circle, transparent 0 8%, #000 18%, transparent 62%); }
+  @keyframes rayos { 0%{opacity:0; transform:scale(.4)} 25%{opacity:1} 100%{opacity:0; transform:scale(1.4) rotate(24deg)} }
+  .marca { position:absolute; top:8vh; text-align:center; }
+  .marca h1 { font-family:Fraunces,serif; font-size:clamp(40px,8vw,78px); margin:0; background:linear-gradient(180deg,#fff8e4,#f0d48a 50%,#e7b0a8); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .marca p, .pista { color:#f6e7c8; letter-spacing:.16em; text-transform:uppercase; font-size:13px; font-weight:700; }
+  .pista { position:absolute; bottom:8vh; animation:parpadeo 1.2s ease-in-out infinite; }
+  #intro.boom .pista { opacity:0; }
+  @keyframes parpadeo { 50%{opacity:.35} }
+  .escena { position:relative; width:min(96vw,720px); height:min(74vw,600px); }
+  .orbe { position:absolute; left:50%; top:50%; width:132px; height:132px; margin:-66px 0 0 -66px; border:0; border-radius:50%; cursor:pointer; background:radial-gradient(circle at 35% 32%, #fff8e2, #f0d48a 32%, #e7b89a 66%, #8d6a4a); box-shadow:0 0 40px #f0d48a; animation:pulso 1.05s ease-in-out infinite; }
+  @keyframes pulso { 50%{transform:scale(1.08)} }
+  .orbe.estalla { animation:estalla .6s ease forwards; }
+  @keyframes estalla { 100%{transform:scale(3.4); opacity:0} }
+  .onda,.chispa,.rueda,.arceus-aparece,.placa,.aura { position:absolute; left:50%; top:50%; pointer-events:none; }
+  .onda { width:24px; height:24px; margin:-12px; border-radius:50%; border:3px solid rgba(255,236,190,.95); opacity:0; }
+  .onda.sale { animation:onda 1.1s ease-out forwards; }
+  @keyframes onda { 0%{opacity:1; transform:scale(.2)} 100%{opacity:0; transform:scale(24)} }
+  .chispa { width:7px; height:7px; margin:-3px; border-radius:50%; background:#fff; opacity:0; }
+  .chispa.sale { animation:chispa .9s ease-out forwards; }
+  @keyframes chispa { 0%{opacity:1} 100%{opacity:0; transform:translate(var(--x),var(--y)) scale(.3)} }
+  .rueda { width:min(62vw,340px); height:min(62vw,340px); margin:calc(min(62vw,340px)/-2) 0 0 calc(min(62vw,340px)/-2); background:center / contain no-repeat; opacity:0; filter:drop-shadow(0 0 18px #ffb423); }
+  .rueda.sale { animation:rueda 1.8s ease-out forwards; }
+  @keyframes rueda { 0%{opacity:0; transform:scale(.2) rotate(-12deg)} 30%{opacity:1} 100%{opacity:.95; transform:scale(1) rotate(8deg)} }
+  .aura { width:min(70vw,420px); height:min(70vw,420px); margin:calc(min(70vw,420px)/-2) 0 0 calc(min(70vw,420px)/-2); border-radius:50%; background:radial-gradient(circle, rgba(255,236,150,.9) 0%, rgba(255,176,40,.45) 28%, rgba(255,140,0,0) 68%); opacity:0; filter:blur(2px); }
+  .aura.sale { animation:aura 2.1s ease forwards; }
+  @keyframes aura { 0%{opacity:0; transform:scale(.2)} 30%{opacity:1} 100%{opacity:.85; transform:scale(1)} }
+  .arceus-aparece { width:min(48vw,280px); height:min(48vw,280px); margin:calc(min(48vw,280px)/-2) 0 0 calc(min(48vw,280px)/-2); object-fit:contain; opacity:0; filter:drop-shadow(0 0 18px #fff1b0) drop-shadow(0 0 36px #ffb423); }
+  .arceus-aparece.sale { animation:aparece 2s ease forwards; }
+  @keyframes aparece { 0%{opacity:0; transform:scale(.45)} 34%{opacity:1; transform:scale(1)} 100%{opacity:1; transform:scale(1.04)} }
+  .placa { width:46px; height:96px; margin:-48px 0 0 -23px; opacity:0; background:center / 100% 100% no-repeat; filter:drop-shadow(0 0 8px rgba(255,255,255,.85)); }
+  .placa.sale { animation:sale 1.15s cubic-bezier(.12,.75,.2,1) forwards; }
+  @keyframes sale { 0%{opacity:0; transform:scale(.12) rotate(var(--g))} 100%{opacity:1; transform:translate(var(--x),var(--y)) scale(1) rotate(var(--g))} }
+  .app { max-width:1120px; margin:0 auto; padding:22px 16px 70px; opacity:0; transform:translateY(10px); transition:.45s ease; }
+  .app.on { opacity:1; transform:none; }
+  header { display:flex; justify-content:space-between; gap:12px; align-items:end; flex-wrap:wrap; }
+  .sello { margin:0; letter-spacing:.14em; text-transform:uppercase; font-size:12px; font-weight:800; color:#8d7048; }
+  h1 { font-family:Fraunces,serif; font-size:clamp(32px,5vw,50px); margin:0; color:#6d5344; }
+  .cab button, .suave, .ghost { border-radius:999px; padding:10px 14px; font-weight:800; border:2px solid #d9c7a2; background:#fffaf2; color:var(--ink); }
+  .cab button, .suave, .ghost { border-color:var(--gold); }
+  .suave { background:var(--gold); }
+  .sello, #rango { color:var(--gold); }
+  .barra i { background:linear-gradient(90deg,var(--gold),#8eb0c4); }
+  input[type="color"] { width:72px; height:42px; padding:4px; }
+  .personal, .panel { margin-top:12px; background:rgba(255,250,244,.8); border:2px solid #e6d8bf; border-radius:18px; padding:12px; }
+  .personal { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:800; text-transform:uppercase; color:#8d7048; flex:1; min-width:180px; }
+  input { border:2px solid #c9d7e2; border-radius:12px; padding:10px 12px; background:#fffefb; color:var(--ink); }
+  .busca { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .busca input { flex:1; min-width:180px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .chip { border:0; border-radius:999px; padding:6px 10px; font-weight:800; font-size:13px; color:#31404e; }
+  .chip.activo { outline:2px solid var(--ink); }
+  .layout { display:grid; grid-template-columns:280px 1fr; gap:14px; margin-top:14px; }
+  .indice { max-height:760px; overflow:auto; background:rgba(255,250,244,.78); border:2px solid #e6d8bf; border-radius:18px; padding:8px; }
+  .entrada { width:100%; display:grid; grid-template-columns:42px 46px 1fr; gap:6px; align-items:center; text-align:left; border:0; background:transparent; border-radius:12px; padding:4px; color:var(--ink); }
+  .entrada.activo, .entrada:hover { background:#fff; }
+  .entrada img { width:42px; height:42px; object-fit:contain; }
+  .entrada small { color:#8d7048; font-weight:800; }
+  .ficha { background:linear-gradient(180deg,#f7f4ee,#f3ecdf); border:1px solid #e7e0d2; border-radius:8px; padding:16px; box-shadow:0 10px 28px rgba(90,70,40,.08); }
+  .ficha-top { display:grid; grid-template-columns:280px 1fr; gap:18px; }
+  .marco { position:relative; background:#fff; border:1px solid #e6e1d8; padding:12px 12px 18px; box-shadow:0 8px 18px rgba(80,70,50,.06); }
+  .cinta { position:absolute; width:34px; height:16px; background:var(--tape); box-shadow:0 1px 0 rgba(180,150,80,.25); }
+  .cinta.a { top:-7px; left:-6px; transform:rotate(-24deg); }
+  .cinta.b { right:-6px; bottom:28px; transform:rotate(-20deg); }
+  .foto { height:250px; background:#eceae6; display:grid; place-items:center; position:relative; }
+  .foto img { width:210px; height:210px; object-fit:contain; }
+  .sexos { position:absolute; top:8px; right:8px; display:grid; gap:2px; color:#c2b07a; font-weight:800; }
+  .sexos i { font-style:normal; opacity:.35; }
+  .sexos i.on { opacity:1; }
+  .sexos.vacio { display:none; }
+  .insignias { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .insignia { border:2px dashed #d7c7a4; border-radius:14px; padding:10px; text-align:center; background:rgba(255,255,255,.4); opacity:.5; font-size:13px; }
+  .insignia.gana { opacity:1; background:#fff6d8; border-style:solid; border-color:var(--gold); }
+  .insignia b { display:block; font-size:15px; }
+  .cmp { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .lado { background:#fffaf2; border:2px solid #e6d8bf; border-radius:14px; padding:10px; text-align:center; }
+  .lado img { width:96px; height:96px; object-fit:contain; }
+  .lado .stat b.gana { color:#6d5344; }
+  @media (max-width:860px) { .insignias, .cmp { grid-template-columns:1fr 1fr; } }
+  .forma { margin:-12px auto 0; width:max-content; background:#f7f1e6; border:1px solid #e5dcc8; padding:4px 22px; clip-path:polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); font-weight:700; }
+  .medidas { display:flex; gap:16px; color:#607184; font-weight:700; margin-bottom:8px; }
+  .cintilla { display:inline-block; background:var(--navy); color:#f7f4ee; font-weight:800; padding:6px 22px 6px 12px; clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%); }
+  .fila { background:#f7f3ea; border-radius:4px; text-align:center; padding:8px; margin:6px 0 12px; color:#66788a; }
+  .nota { margin-top:14px; background:#f7f4ee; border:1px solid #e6e0d4; border-radius:6px; padding:14px; line-height:1.45; box-shadow:inset 0 0 0 1px rgba(255,255,255,.6); }
+  .progreso { margin-top:12px; display:flex; justify-content:space-between; gap:12px; align-items:center; background:#f7f4ee; border:1px solid #e6e0d4; border-radius:8px; padding:10px 12px; }
+  .progreso b { font-size:32px; color:#607184; }
+  .barra { height:8px; border-radius:99px; background:#e7e1d6; overflow:hidden; margin-top:6px; }
+  .barra i { display:block; height:100%; background:linear-gradient(90deg,#d9c48a,#8eb0c4); }
+  .acciones { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .tipos { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+  .tipo { border:0; border-radius:999px; padding:4px 10px; font-weight:800; }
+  .equipo { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  .hueco { min-height:108px; border:2px dashed #d7c7a4; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(255,255,255,.5); font-size:12px; font-weight:700; text-align:center; }
+  .hueco.sobre { background:#fff6d8; }
+  .hueco img { width:56px; height:56px; object-fit:contain; }
+  .hueco .x { border:0; background:#e7b4ae; color:#fff; border-radius:99px; width:20px; height:20px; }
+  .err { color:#a85c58; font-weight:700; min-height:20px; }
+  #quiz { position:fixed; inset:0; display:none; place-items:center; background:rgba(40,48,64,.4); z-index:15; padding:16px; }
+  #quiz.on { display:grid; }
+  .quiz { width:min(520px,100%); background:#f7f4ee; border-radius:18px; padding:16px; border:3px solid #e7d7b0; }
+  .silueta img { width:180px; height:180px; object-fit:contain; filter:brightness(0); }
+  .silueta.revela img { filter:none; }
+  .opciones { display:grid; gap:8px; }
+  .opciones button { text-align:left; border-radius:12px; border:2px solid #c9d7e2; background:#fff; padding:8px 10px; font-weight:800; }
+  .opciones button.bien { background:#e5f3e4; }
+  .opciones button.mal { background:#f8e4e2; }
+
+  .cadena { display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin:8px 0; }
+  .cadena button { border:2px solid #e6d8bf; background:#fffaf2; border-radius:12px; padding:4px; font-weight:800; font-size:12px; color:var(--ink); }
+  .cadena button.activo { border-color:var(--gold); background:#fff6d8; }
+  .cadena img { width:54px; height:54px; object-fit:contain; display:block; }
+  #grieta { position:fixed; inset:0; display:none; place-items:center; background:radial-gradient(circle at 50% 46%, rgba(240,196,90,.35), transparent 42%), #12182a; z-index:18; padding:16px; }
+  #grieta.on { display:grid; }
+  .grieta-caja { text-align:center; color:#f6e7c8; }
+  .grieta-caja h2 { font-family:Fraunces,serif; margin:0 0 8px; color:#fff4d2; }
+  .portal { width:min(70vw,280px); height:min(70vw,280px); margin:0 auto; border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle, #fff6c8 0%, #f0b43a 28%, transparent 70%); animation:pulso 1s ease-in-out infinite; }
+  .portal img { width:78%; height:78%; object-fit:contain; filter:brightness(0); transition:.45s ease; }
+  .portal.revela img { filter:none; }
+  #grieta .acciones { justify-content:center; }
+  .tip { position:fixed; z-index:30; max-width:240px; background:#fffaf3; border:2px solid #e7d7b0; border-radius:12px; padding:8px; font-size:13px; }
+
+  .formas { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 4px; }
+  .formas button { border-radius:999px; border:2px solid #d9c7a2; background:#fffaf2; padding:6px 10px; font-weight:800; font-size:13px; color:#31404e; }
+  .formas button.activo { background:#e7d7b0; outline:2px solid var(--ink); }
+  .stats { display:grid; gap:4px; margin:8px 0 2px; }
+  .stat { display:grid; grid-template-columns:78px 1fr 32px; gap:6px; align-items:center; font-size:12px; font-weight:800; color:#607184; }
+  .stat i { display:block; height:8px; border-radius:99px; background:linear-gradient(90deg,#d9c48a,#8eb0c4); }
+  .sinsexo { color:#8d7048; font-weight:800; font-size:12px; }
+  html, body { overflow-x:hidden; }
+  .entrada b { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cab { display:flex; gap:8px; flex-wrap:wrap; }
+  input { font-size:16px; }
+  button { touch-action:manipulation; }
+  @media (max-width:860px) {
+    .layout, .ficha-top { grid-template-columns:1fr; }
+    .indice { max-height:230px; }
+    .equipo { grid-template-columns:repeat(3,1fr); }
+    .foto { height:200px; }
+    .foto img { width:160px; height:160px; }
+    .marco { max-width:320px; margin:0 auto; }
+    header { align-items:stretch; }
+    .cab { width:100%; }
+    .cab button { flex:1; }
+    .chips { flex-wrap:nowrap; overflow-x:auto; padding-bottom:6px; }
+    .chip { flex:0 0 auto; }
+    .marca { top:max(12px, 4vh); }
+    .pista { bottom:max(12px, 3vh); font-size:12px; }
+    .escena { height:min(88vw, 460px); }
+    .orbe { width:108px; height:108px; margin:-54px 0 0 -54px; }
+    .placa { width:34px; height:72px; margin:-36px 0 0 -17px; }
+    .quiz { max-height:92vh; overflow:auto; }
+    .silueta img { width:140px; height:140px; }
+    .tip { max-width:min(240px, calc(100vw - 24px)); }
+  }
+  @media (max-width:520px) {
+    .app { padding:14px 12px 72px; }
+    .equipo { grid-template-columns:repeat(2,1fr); }
+    .hueco { min-height:96px; }
+    .hueco .x { width:28px; height:28px; }
+    .entrada { min-height:48px; }
+    .sello { letter-spacing:.04em; }
+    .acciones button, .personal { width:100%; }
+    .personal label { min-width:0; }
+    .medidas, .progreso { flex-wrap:wrap; }
+  }
+</style>
+</head>
+<body>
+  <div id="intro">
+    <div class="destello"></div><div class="rayos"></div>
+    <div class="marca"><h1>Arceus</h1><p>Las 18 tablas de Hisui</p></div>
+    <div class="escena" id="escena"><button class="orbe" id="orbe" type="button" aria-label="Tocar el aro para abrir la Pokédex de Hisui"></button></div>
+    <p class="pista">Toca el aro · Enter</p>
+  </div>
+  <main class="app" id="app">
+    <header>
+      <div>
+        <p class="sello" id="sello">Equipo Galaxia · 242 registros · formas de Hisui</p>
+        <h1>Pokédex de Hisui</h1>
+        <p id="linea">Investigador: —</p>
+        <p id="fraseLinea" style="margin:4px 0 0;font-weight:700"></p>
+        <div class="favorito" id="favorito"></div>
+      </div>
+      <div class="cab">
+        <button type="button" id="quizBtn">¿Quién es?</button>
+        <button type="button" id="grietaBtn">Grieta</button>
+        <button type="button" id="replay">Ver el origen</button>
+      </div>
+    </header>
+    <section class="personal">
+      <label>Tu nombre<input id="nombre" maxlength="24" placeholder="Escribe tu nombre" /></label>
+      <label>Tu grupo<input id="grupo" maxlength="24" placeholder="Equipo Galaxia" /></label>
+      <label>Tu frase<input id="frase" maxlength="42" placeholder="Una nota de campo" /></label>
+      <label>Color de la página<input id="color" type="color" value="#c6b27a" /></label>
+      <label>Color del papel<input id="papel" type="color" value="#f4efe4" /></label>
+      <p id="rango" style="margin:0;font-weight:800;color:#8d7048">Rango: aprendiz de campo</p>
+    </section>
+    <div class="busca">
+      <input id="q" maxlength="30" placeholder="Busca en Hisui: Arcanine, Wyrdeer o 151" />
+      <button class="suave" id="go" type="button">Buscar</button>
+    </div>
+    <div class="chips" id="tipos"></div>
+    <p class="err" id="err"></p>
+    <div class="layout">
+      <aside class="indice" id="indice"></aside>
+      <section id="ficha"></section>
+    </div>
+    <section class="panel">
+      <h2 style="margin:0 0 8px;font-family:Fraunces,serif">Equipo de investigación</h2>
+      <p style="margin:0 0 8px">En la laptop, arrastra una entrada o la foto. En el celular, toca una plaza vacía para poner al Pokémon abierto.</p>
+      <div class="equipo" id="equipo"></div>
+    </section>
+    <section class="panel">
+      <h2 style="margin:0 0 8px;font-family:Fraunces,serif">Insignias de investigador</h2>
+      <p style="margin:0 0 8px">Se ganan solas y se guardan con tu nombre.</p>
+      <div class="insignias" id="insignias"></div>
+    </section>
+    <section class="panel">
+      <h2 style="margin:0 0 8px;font-family:Fraunces,serif">Comparar fichas</h2>
+      <p style="margin:0 0 8px">Abre un Pokémon y ponlo en una columna. El número más alto queda marcado.</p>
+      <div class="cmp" id="cmp"></div>
+    </section>
+  </main>
+  <div id="quiz" role="dialog" aria-modal="true">
+    <div class="quiz">
+      <h2 style="font-family:Fraunces,serif;margin:0">¿Quién es ese Pokémon?</h2>
+      <p id="quizPuntos">Aciertos: 0</p>
+      <div class="silueta" id="quizFoto"></div>
+      <div class="opciones" id="quizOps"></div>
+      <div class="acciones"><button class="suave" id="quizNext" type="button">Otro</button><button id="quizCerrar" type="button">Cerrar</button></div>
+    </div>
+  </div>
+  <div class="tip" id="tip" hidden></div>
+  <div id="grieta" role="dialog" aria-modal="true">
+    <div class="grieta-caja">
+      <h2>Grieta espacio-tiempo</h2>
+      <p id="grietaTxt">Algo cruza la luz...</p>
+      <div class="portal" id="grietaFoto"></div>
+      <div class="acciones"><button class="suave" id="grietaAbrir" type="button">Registrar</button><button id="grietaOtra" type="button">Otra grieta</button><button id="grietaCerrar" type="button">Cerrar</button></div>
+    </div>
+  </div>
+<script>
+const HISUI = [{"n":1,"id":722,"q":"rowlet","art":722,"nombre":"Rowlet","forma":""},{"n":2,"id":723,"q":"dartrix","art":723,"nombre":"Dartrix","forma":""},{"n":3,"id":724,"q":"decidueye-hisui","art":10244,"nombre":"Decidueye de Hisui","forma":"hisui"},{"n":4,"id":155,"q":"cyndaquil","art":155,"nombre":"Cyndaquil","forma":""},{"n":5,"id":156,"q":"quilava","art":156,"nombre":"Quilava","forma":""},{"n":6,"id":157,"q":"typhlosion-hisui","art":10233,"nombre":"Typhlosion de Hisui","forma":"hisui"},{"n":7,"id":501,"q":"oshawott","art":501,"nombre":"Oshawott","forma":""},{"n":8,"id":502,"q":"dewott","art":502,"nombre":"Dewott","forma":""},{"n":9,"id":503,"q":"samurott-hisui","art":10236,"nombre":"Samurott de Hisui","forma":"hisui"},{"n":10,"id":399,"q":"bidoof","art":399,"nombre":"Bidoof","forma":""},{"n":11,"id":400,"q":"bibarel","art":400,"nombre":"Bibarel","forma":""},{"n":12,"id":396,"q":"starly","art":396,"nombre":"Starly","forma":""},{"n":13,"id":397,"q":"staravia","art":397,"nombre":"Staravia","forma":""},{"n":14,"id":398,"q":"staraptor","art":398,"nombre":"Staraptor","forma":""},{"n":15,"id":403,"q":"shinx","art":403,"nombre":"Shinx","forma":""},{"n":16,"id":404,"q":"luxio","art":404,"nombre":"Luxio","forma":""},{"n":17,"id":405,"q":"luxray","art":405,"nombre":"Luxray","forma":""},{"n":18,"id":265,"q":"wurmple","art":265,"nombre":"Wurmple","forma":""},{"n":19,"id":266,"q":"silcoon","art":266,"nombre":"Silcoon","forma":""},{"n":20,"id":267,"q":"beautifly","art":267,"nombre":"Beautifly","forma":""},{"n":21,"id":268,"q":"cascoon","art":268,"nombre":"Cascoon","forma":""},{"n":22,"id":269,"q":"dustox","art":269,"nombre":"Dustox","forma":""},{"n":23,"id":77,"q":"ponyta","art":77,"nombre":"Ponyta","forma":""},{"n":24,"id":78,"q":"rapidash","art":78,"nombre":"Rapidash","forma":""},{"n":25,"id":133,"q":"eevee","art":133,"nombre":"Eevee","forma":""},{"n":26,"id":134,"q":"vaporeon","art":134,"nombre":"Vaporeon","forma":""},{"n":27,"id":135,"q":"jolteon","art":135,"nombre":"Jolteon","forma":""},{"n":28,"id":136,"q":"flareon","art":136,"nombre":"Flareon","forma":""},{"n":29,"id":196,"q":"espeon","art":196,"nombre":"Espeon","forma":""},{"n":30,"id":197,"q":"umbreon","art":197,"nombre":"Umbreon","forma":""},{"n":31,"id":470,"q":"leafeon","art":470,"nombre":"Leafeon","forma":""},{"n":32,"id":471,"q":"glaceon","art":471,"nombre":"Glaceon","forma":""},{"n":33,"id":700,"q":"sylveon","art":700,"nombre":"Sylveon","forma":""},{"n":34,"id":41,"q":"zubat","art":41,"nombre":"Zubat","forma":""},{"n":35,"id":42,"q":"golbat","art":42,"nombre":"Golbat","forma":""},{"n":36,"id":169,"q":"crobat","art":169,"nombre":"Crobat","forma":""},{"n":37,"id":425,"q":"drifloon","art":425,"nombre":"Drifloon","forma":""},{"n":38,"id":426,"q":"drifblim","art":426,"nombre":"Drifblim","forma":""},{"n":39,"id":401,"q":"kricketot","art":401,"nombre":"Kricketot","forma":""},{"n":40,"id":402,"q":"kricketune","art":402,"nombre":"Kricketune","forma":""},{"n":41,"id":418,"q":"buizel","art":418,"nombre":"Buizel","forma":""},{"n":42,"id":419,"q":"floatzel","art":419,"nombre":"Floatzel","forma":""},{"n":43,"id":412,"q":"burmy","art":412,"nombre":"Burmy","forma":""},{"n":44,"id":413,"q":"wormadam-plant","art":413,"nombre":"Wormadam","forma":""},{"n":45,"id":414,"q":"mothim","art":414,"nombre":"Mothim","forma":""},{"n":46,"id":74,"q":"geodude","art":74,"nombre":"Geodude","forma":""},{"n":47,"id":75,"q":"graveler","art":75,"nombre":"Graveler","forma":""},{"n":48,"id":76,"q":"golem","art":76,"nombre":"Golem","forma":""},{"n":49,"id":234,"q":"stantler","art":234,"nombre":"Stantler","forma":""},{"n":50,"id":899,"q":"wyrdeer","art":899,"nombre":"Wyrdeer","forma":""},{"n":51,"id":446,"q":"munchlax","art":446,"nombre":"Munchlax","forma":""},{"n":52,"id":143,"q":"snorlax","art":143,"nombre":"Snorlax","forma":""},{"n":53,"id":46,"q":"paras","art":46,"nombre":"Paras","forma":""},{"n":54,"id":47,"q":"parasect","art":47,"nombre":"Parasect","forma":""},{"n":55,"id":172,"q":"pichu","art":172,"nombre":"Pichu","forma":""},{"n":56,"id":25,"q":"pikachu","art":25,"nombre":"Pikachu","forma":""},{"n":57,"id":26,"q":"raichu","art":26,"nombre":"Raichu","forma":""},{"n":58,"id":63,"q":"abra","art":63,"nombre":"Abra","forma":""},{"n":59,"id":64,"q":"kadabra","art":64,"nombre":"Kadabra","forma":""},{"n":60,"id":65,"q":"alakazam","art":65,"nombre":"Alakazam","forma":""},{"n":61,"id":390,"q":"chimchar","art":390,"nombre":"Chimchar","forma":""},{"n":62,"id":391,"q":"monferno","art":391,"nombre":"Monferno","forma":""},{"n":63,"id":392,"q":"infernape","art":392,"nombre":"Infernape","forma":""},{"n":64,"id":427,"q":"buneary","art":427,"nombre":"Buneary","forma":""},{"n":65,"id":428,"q":"lopunny","art":428,"nombre":"Lopunny","forma":""},{"n":66,"id":420,"q":"cherubi","art":420,"nombre":"Cherubi","forma":""},{"n":67,"id":421,"q":"cherrim","art":421,"nombre":"Cherrim","forma":""},{"n":68,"id":54,"q":"psyduck","art":54,"nombre":"Psyduck","forma":""},{"n":69,"id":55,"q":"golduck","art":55,"nombre":"Golduck","forma":""},{"n":70,"id":415,"q":"combee","art":415,"nombre":"Combee","forma":""},{"n":71,"id":416,"q":"vespiquen","art":416,"nombre":"Vespiquen","forma":""},{"n":72,"id":123,"q":"scyther","art":123,"nombre":"Scyther","forma":""},{"n":73,"id":900,"q":"kleavor","art":900,"nombre":"Kleavor","forma":""},{"n":74,"id":212,"q":"scizor","art":212,"nombre":"Scizor","forma":""},{"n":75,"id":214,"q":"heracross","art":214,"nombre":"Heracross","forma":""},{"n":76,"id":439,"q":"mime-jr","art":439,"nombre":"Mime Jr.","forma":""},{"n":77,"id":122,"q":"mr-mime","art":122,"nombre":"Mr. Mime","forma":""},{"n":78,"id":190,"q":"aipom","art":190,"nombre":"Aipom","forma":""},{"n":79,"id":424,"q":"ambipom","art":424,"nombre":"Ambipom","forma":""},{"n":80,"id":129,"q":"magikarp","art":129,"nombre":"Magikarp","forma":""},{"n":81,"id":130,"q":"gyarados","art":130,"nombre":"Gyarados","forma":""},{"n":82,"id":422,"q":"shellos","art":422,"nombre":"Shellos","forma":""},{"n":83,"id":423,"q":"gastrodon","art":423,"nombre":"Gastrodon","forma":""},{"n":84,"id":211,"q":"qwilfish-hisui","art":10234,"nombre":"Qwilfish de Hisui","forma":"hisui"},{"n":85,"id":904,"q":"overqwil","art":904,"nombre":"Overqwil","forma":""},{"n":86,"id":440,"q":"happiny","art":440,"nombre":"Happiny","forma":""},{"n":87,"id":113,"q":"chansey","art":113,"nombre":"Chansey","forma":""},{"n":88,"id":242,"q":"blissey","art":242,"nombre":"Blissey","forma":""},{"n":89,"id":406,"q":"budew","art":406,"nombre":"Budew","forma":""},{"n":90,"id":315,"q":"roselia","art":315,"nombre":"Roselia","forma":""},{"n":91,"id":407,"q":"roserade","art":407,"nombre":"Roserade","forma":""},{"n":92,"id":455,"q":"carnivine","art":455,"nombre":"Carnivine","forma":""},{"n":93,"id":548,"q":"petilil","art":548,"nombre":"Petilil","forma":""},{"n":94,"id":549,"q":"lilligant-hisui","art":10237,"nombre":"Lilligant de Hisui","forma":"hisui"},{"n":95,"id":114,"q":"tangela","art":114,"nombre":"Tangela","forma":""},{"n":96,"id":465,"q":"tangrowth","art":465,"nombre":"Tangrowth","forma":""},{"n":97,"id":339,"q":"barboach","art":339,"nombre":"Barboach","forma":""},{"n":98,"id":340,"q":"whiscash","art":340,"nombre":"Whiscash","forma":""},{"n":99,"id":453,"q":"croagunk","art":453,"nombre":"Croagunk","forma":""},{"n":100,"id":454,"q":"toxicroak","art":454,"nombre":"Toxicroak","forma":""},{"n":101,"id":280,"q":"ralts","art":280,"nombre":"Ralts","forma":""},{"n":102,"id":281,"q":"kirlia","art":281,"nombre":"Kirlia","forma":""},{"n":103,"id":282,"q":"gardevoir","art":282,"nombre":"Gardevoir","forma":""},{"n":104,"id":475,"q":"gallade","art":475,"nombre":"Gallade","forma":""},{"n":105,"id":193,"q":"yanma","art":193,"nombre":"Yanma","forma":""},{"n":106,"id":469,"q":"yanmega","art":469,"nombre":"Yanmega","forma":""},{"n":107,"id":449,"q":"hippopotas","art":449,"nombre":"Hippopotas","forma":""},{"n":108,"id":450,"q":"hippowdon","art":450,"nombre":"Hippowdon","forma":""},{"n":109,"id":417,"q":"pachirisu","art":417,"nombre":"Pachirisu","forma":""},{"n":110,"id":434,"q":"stunky","art":434,"nombre":"Stunky","forma":""},{"n":111,"id":435,"q":"skuntank","art":435,"nombre":"Skuntank","forma":""},{"n":112,"id":216,"q":"teddiursa","art":216,"nombre":"Teddiursa","forma":""},{"n":113,"id":217,"q":"ursaring","art":217,"nombre":"Ursaring","forma":""},{"n":114,"id":901,"q":"ursaluna","art":901,"nombre":"Ursaluna","forma":""},{"n":115,"id":704,"q":"goomy","art":704,"nombre":"Goomy","forma":""},{"n":116,"id":705,"q":"sliggoo-hisui","art":10241,"nombre":"Sliggoo de Hisui","forma":"hisui"},{"n":117,"id":706,"q":"goodra-hisui","art":10242,"nombre":"Goodra de Hisui","forma":"hisui"},{"n":118,"id":95,"q":"onix","art":95,"nombre":"Onix","forma":""},{"n":119,"id":208,"q":"steelix","art":208,"nombre":"Steelix","forma":""},{"n":120,"id":111,"q":"rhyhorn","art":111,"nombre":"Rhyhorn","forma":""},{"n":121,"id":112,"q":"rhydon","art":112,"nombre":"Rhydon","forma":""},{"n":122,"id":464,"q":"rhyperior","art":464,"nombre":"Rhyperior","forma":""},{"n":123,"id":438,"q":"bonsly","art":438,"nombre":"Bonsly","forma":""},{"n":124,"id":185,"q":"sudowoodo","art":185,"nombre":"Sudowoodo","forma":""},{"n":125,"id":108,"q":"lickitung","art":108,"nombre":"Lickitung","forma":""},{"n":126,"id":463,"q":"lickilicky","art":463,"nombre":"Lickilicky","forma":""},{"n":127,"id":175,"q":"togepi","art":175,"nombre":"Togepi","forma":""},{"n":128,"id":176,"q":"togetic","art":176,"nombre":"Togetic","forma":""},{"n":129,"id":468,"q":"togekiss","art":468,"nombre":"Togekiss","forma":""},{"n":130,"id":387,"q":"turtwig","art":387,"nombre":"Turtwig","forma":""},{"n":131,"id":388,"q":"grotle","art":388,"nombre":"Grotle","forma":""},{"n":132,"id":389,"q":"torterra","art":389,"nombre":"Torterra","forma":""},{"n":133,"id":137,"q":"porygon","art":137,"nombre":"Porygon","forma":""},{"n":134,"id":233,"q":"porygon2","art":233,"nombre":"Porygon2","forma":""},{"n":135,"id":474,"q":"porygon-z","art":474,"nombre":"Porygon-Z","forma":""},{"n":136,"id":92,"q":"gastly","art":92,"nombre":"Gastly","forma":""},{"n":137,"id":93,"q":"haunter","art":93,"nombre":"Haunter","forma":""},{"n":138,"id":94,"q":"gengar","art":94,"nombre":"Gengar","forma":""},{"n":139,"id":442,"q":"spiritomb","art":442,"nombre":"Spiritomb","forma":""},{"n":140,"id":198,"q":"murkrow","art":198,"nombre":"Murkrow","forma":""},{"n":141,"id":430,"q":"honchkrow","art":430,"nombre":"Honchkrow","forma":""},{"n":142,"id":201,"q":"unown","art":201,"nombre":"Unown","forma":""},{"n":143,"id":363,"q":"spheal","art":363,"nombre":"Spheal","forma":""},{"n":144,"id":364,"q":"sealeo","art":364,"nombre":"Sealeo","forma":""},{"n":145,"id":365,"q":"walrein","art":365,"nombre":"Walrein","forma":""},{"n":146,"id":223,"q":"remoraid","art":223,"nombre":"Remoraid","forma":""},{"n":147,"id":224,"q":"octillery","art":224,"nombre":"Octillery","forma":""},{"n":148,"id":451,"q":"skorupi","art":451,"nombre":"Skorupi","forma":""},{"n":149,"id":452,"q":"drapion","art":452,"nombre":"Drapion","forma":""},{"n":150,"id":58,"q":"growlithe-hisui","art":10229,"nombre":"Growlithe de Hisui","forma":"hisui"},{"n":151,"id":59,"q":"arcanine-hisui","art":10230,"nombre":"Arcanine de Hisui","forma":"hisui"},{"n":152,"id":431,"q":"glameow","art":431,"nombre":"Glameow","forma":""},{"n":153,"id":432,"q":"purugly","art":432,"nombre":"Purugly","forma":""},{"n":154,"id":66,"q":"machop","art":66,"nombre":"Machop","forma":""},{"n":155,"id":67,"q":"machoke","art":67,"nombre":"Machoke","forma":""},{"n":156,"id":68,"q":"machamp","art":68,"nombre":"Machamp","forma":""},{"n":157,"id":441,"q":"chatot","art":441,"nombre":"Chatot","forma":""},{"n":158,"id":355,"q":"duskull","art":355,"nombre":"Duskull","forma":""},{"n":159,"id":356,"q":"dusclops","art":356,"nombre":"Dusclops","forma":""},{"n":160,"id":477,"q":"dusknoir","art":477,"nombre":"Dusknoir","forma":""},{"n":161,"id":393,"q":"piplup","art":393,"nombre":"Piplup","forma":""},{"n":162,"id":394,"q":"prinplup","art":394,"nombre":"Prinplup","forma":""},{"n":163,"id":395,"q":"empoleon","art":395,"nombre":"Empoleon","forma":""},{"n":164,"id":458,"q":"mantyke","art":458,"nombre":"Mantyke","forma":""},{"n":165,"id":226,"q":"mantine","art":226,"nombre":"Mantine","forma":""},{"n":166,"id":550,"q":"basculin-white-striped","art":10247,"nombre":"Basculin raya blanca","forma":"hisui"},{"n":167,"id":902,"q":"basculegion-male","art":902,"nombre":"Basculegion","forma":""},{"n":168,"id":37,"q":"vulpix","art":37,"nombre":"Vulpix","forma":""},{"n":169,"id":38,"q":"ninetales","art":38,"nombre":"Ninetales","forma":""},{"n":170,"id":72,"q":"tentacool","art":72,"nombre":"Tentacool","forma":""},{"n":171,"id":73,"q":"tentacruel","art":73,"nombre":"Tentacruel","forma":""},{"n":172,"id":456,"q":"finneon","art":456,"nombre":"Finneon","forma":""},{"n":173,"id":457,"q":"lumineon","art":457,"nombre":"Lumineon","forma":""},{"n":174,"id":240,"q":"magby","art":240,"nombre":"Magby","forma":""},{"n":175,"id":126,"q":"magmar","art":126,"nombre":"Magmar","forma":""},{"n":176,"id":467,"q":"magmortar","art":467,"nombre":"Magmortar","forma":""},{"n":177,"id":81,"q":"magnemite","art":81,"nombre":"Magnemite","forma":""},{"n":178,"id":82,"q":"magneton","art":82,"nombre":"Magneton","forma":""},{"n":179,"id":462,"q":"magnezone","art":462,"nombre":"Magnezone","forma":""},{"n":180,"id":436,"q":"bronzor","art":436,"nombre":"Bronzor","forma":""},{"n":181,"id":437,"q":"bronzong","art":437,"nombre":"Bronzong","forma":""},{"n":182,"id":239,"q":"elekid","art":239,"nombre":"Elekid","forma":""},{"n":183,"id":125,"q":"electabuzz","art":125,"nombre":"Electabuzz","forma":""},{"n":184,"id":466,"q":"electivire","art":466,"nombre":"Electivire","forma":""},{"n":185,"id":207,"q":"gligar","art":207,"nombre":"Gligar","forma":""},{"n":186,"id":472,"q":"gliscor","art":472,"nombre":"Gliscor","forma":""},{"n":187,"id":443,"q":"gible","art":443,"nombre":"Gible","forma":""},{"n":188,"id":444,"q":"gabite","art":444,"nombre":"Gabite","forma":""},{"n":189,"id":445,"q":"garchomp","art":445,"nombre":"Garchomp","forma":""},{"n":190,"id":299,"q":"nosepass","art":299,"nombre":"Nosepass","forma":""},{"n":191,"id":476,"q":"probopass","art":476,"nombre":"Probopass","forma":""},{"n":192,"id":100,"q":"voltorb-hisui","art":10231,"nombre":"Voltorb de Hisui","forma":"hisui"},{"n":193,"id":101,"q":"electrode-hisui","art":10232,"nombre":"Electrode de Hisui","forma":"hisui"},{"n":194,"id":479,"q":"rotom","art":479,"nombre":"Rotom","forma":""},{"n":195,"id":433,"q":"chingling","art":433,"nombre":"Chingling","forma":""},{"n":196,"id":358,"q":"chimecho","art":358,"nombre":"Chimecho","forma":""},{"n":197,"id":200,"q":"misdreavus","art":200,"nombre":"Misdreavus","forma":""},{"n":198,"id":429,"q":"mismagius","art":429,"nombre":"Mismagius","forma":""},{"n":199,"id":173,"q":"cleffa","art":173,"nombre":"Cleffa","forma":""},{"n":200,"id":35,"q":"clefairy","art":35,"nombre":"Clefairy","forma":""},{"n":201,"id":36,"q":"clefable","art":36,"nombre":"Clefable","forma":""},{"n":202,"id":215,"q":"sneasel-hisui","art":10235,"nombre":"Sneasel de Hisui","forma":"hisui"},{"n":203,"id":903,"q":"sneasler","art":903,"nombre":"Sneasler","forma":""},{"n":204,"id":461,"q":"weavile","art":461,"nombre":"Weavile","forma":""},{"n":205,"id":361,"q":"snorunt","art":361,"nombre":"Snorunt","forma":""},{"n":206,"id":362,"q":"glalie","art":362,"nombre":"Glalie","forma":""},{"n":207,"id":478,"q":"froslass","art":478,"nombre":"Froslass","forma":""},{"n":208,"id":408,"q":"cranidos","art":408,"nombre":"Cranidos","forma":""},{"n":209,"id":409,"q":"rampardos","art":409,"nombre":"Rampardos","forma":""},{"n":210,"id":410,"q":"shieldon","art":410,"nombre":"Shieldon","forma":""},{"n":211,"id":411,"q":"bastiodon","art":411,"nombre":"Bastiodon","forma":""},{"n":212,"id":220,"q":"swinub","art":220,"nombre":"Swinub","forma":""},{"n":213,"id":221,"q":"piloswine","art":221,"nombre":"Piloswine","forma":""},{"n":214,"id":473,"q":"mamoswine","art":473,"nombre":"Mamoswine","forma":""},{"n":215,"id":712,"q":"bergmite","art":712,"nombre":"Bergmite","forma":""},{"n":216,"id":713,"q":"avalugg-hisui","art":10243,"nombre":"Avalugg de Hisui","forma":"hisui"},{"n":217,"id":459,"q":"snover","art":459,"nombre":"Snover","forma":""},{"n":218,"id":460,"q":"abomasnow","art":460,"nombre":"Abomasnow","forma":""},{"n":219,"id":570,"q":"zorua-hisui","art":10238,"nombre":"Zorua de Hisui","forma":"hisui"},{"n":220,"id":571,"q":"zoroark-hisui","art":10239,"nombre":"Zoroark de Hisui","forma":"hisui"},{"n":221,"id":627,"q":"rufflet","art":627,"nombre":"Rufflet","forma":""},{"n":222,"id":628,"q":"braviary-hisui","art":10240,"nombre":"Braviary de Hisui","forma":"hisui"},{"n":223,"id":447,"q":"riolu","art":447,"nombre":"Riolu","forma":""},{"n":224,"id":448,"q":"lucario","art":448,"nombre":"Lucario","forma":""},{"n":225,"id":480,"q":"uxie","art":480,"nombre":"Uxie","forma":""},{"n":226,"id":481,"q":"mesprit","art":481,"nombre":"Mesprit","forma":""},{"n":227,"id":482,"q":"azelf","art":482,"nombre":"Azelf","forma":""},{"n":228,"id":485,"q":"heatran","art":485,"nombre":"Heatran","forma":""},{"n":229,"id":486,"q":"regigigas","art":486,"nombre":"Regigigas","forma":""},{"n":230,"id":488,"q":"cresselia","art":488,"nombre":"Cresselia","forma":""},{"n":231,"id":641,"q":"tornadus-incarnate","art":641,"nombre":"Tornadus","forma":""},{"n":232,"id":642,"q":"thundurus-incarnate","art":642,"nombre":"Thundurus","forma":""},{"n":233,"id":645,"q":"landorus-incarnate","art":645,"nombre":"Landorus","forma":""},{"n":234,"id":905,"q":"enamorus-incarnate","art":905,"nombre":"Enamorus","forma":""},{"n":235,"id":483,"q":"dialga","art":483,"nombre":"Dialga","forma":""},{"n":236,"id":484,"q":"palkia","art":484,"nombre":"Palkia","forma":""},{"n":237,"id":487,"q":"giratina-altered","art":487,"nombre":"Giratina","forma":""},{"n":238,"id":493,"q":"arceus","art":493,"nombre":"Arceus","forma":""},{"n":239,"id":489,"q":"phione","art":489,"nombre":"Phione","forma":""},{"n":240,"id":490,"q":"manaphy","art":490,"nombre":"Manaphy","forma":""},{"n":241,"id":492,"q":"shaymin-land","art":492,"nombre":"Shaymin","forma":""},{"n":242,"id":491,"q":"darkrai","art":491,"nombre":"Darkrai","forma":""}];
+const TIPOS = {normal:["normal","#d5d0b4"],fire:["fuego","#f0b39a"],water:["agua","#a7c4ea"],electric:["eléctrico","#f3e4a0"],grass:["planta","#b7d7ae"],ice:["hielo","#c5e7e4"],fighting:["lucha","#e4aea8"],poison:["veneno","#d2b4dc"],ground:["tierra","#e6d7b0"],flying:["volador","#cec4ee"],psychic:["psíquico","#f3bdd0"],bug:["bicho","#d2dba6"],rock:["roca","#ddd4ae"],ghost:["fantasma","#c4bad4"],dragon:["dragón","#c4b6ee"],dark:["siniestro","#cbbba8"],steel:["acero","#d4d4e0"],fairy:["hada","#f0cddd"]};
+const ATAQUE = {normal:{rock:.5,ghost:0,steel:.5},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},ice:{fire:.5,water:.5,grass:2,ice:.5,ground:2,flying:2,dragon:2,steel:.5},fighting:{normal:2,ice:2,poison:.5,flying:.5,psychic:.5,bug:.5,rock:2,ghost:0,dark:2,steel:2,fairy:.5},poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0,fairy:2},ground:{fire:2,electric:2,grass:.5,poison:2,flying:0,bug:.5,rock:2,steel:2},flying:{electric:.5,grass:2,fighting:2,bug:2,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},bug:{fire:.5,grass:2,fighting:.5,poison:.5,flying:.5,psychic:2,ghost:.5,dark:2,steel:.5,fairy:.5},rock:{fire:2,ice:2,fighting:.5,ground:.5,flying:2,bug:2,steel:.5},ghost:{normal:0,psychic:2,ghost:2,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{fighting:.5,psychic:2,ghost:2,dark:.5,fairy:.5},steel:{fire:.5,water:.5,electric:.5,ice:2,rock:2,steel:.5,fairy:2},fairy:{fire:.5,fighting:2,poison:.5,dragon:2,dark:2,steel:.5}};
+const COMIDA = {fire:"bayas picantes",water:"peces de río",grass:"brotes y semillas",electric:"bayas ácidas",normal:"bayas dulces",ice:"bayas heladas",fighting:"grano robusto",poison:"setas de bosque",ground:"raíces",flying:"bayas de arbusto",psychic:"frutos blandos",bug:"hojas tiernas",rock:"musgo de roca",ghost:"niebla dulce",dragon:"mineral y bayas",dark:"bayas amargas",steel:"mineral de cueva",fairy:"néctar de flor"};
+const $ = (id) => document.getElementById(id);
+
+const TIPOS_DE = {"rowlet":["grass","flying"],"dartrix":["grass","flying"],"decidueye-hisui":["grass","fighting"],"cyndaquil":["fire"],"quilava":["fire"],"typhlosion-hisui":["fire","ghost"],"oshawott":["water"],"dewott":["water"],"samurott-hisui":["water","dark"],"bidoof":["normal"],"bibarel":["normal","water"],"starly":["normal","flying"],"staravia":["normal","flying"],"staraptor":["normal","flying"],"shinx":["electric"],"luxio":["electric"],"luxray":["electric"],"wurmple":["bug"],"silcoon":["bug"],"beautifly":["bug","flying"],"cascoon":["bug"],"dustox":["bug","poison"],"ponyta":["fire"],"rapidash":["fire"],"eevee":["normal"],"vaporeon":["water"],"jolteon":["electric"],"flareon":["fire"],"espeon":["psychic"],"umbreon":["dark"],"leafeon":["grass"],"glaceon":["ice"],"sylveon":["fairy"],"zubat":["poison","flying"],"golbat":["poison","flying"],"crobat":["poison","flying"],"drifloon":["ghost","flying"],"drifblim":["ghost","flying"],"kricketot":["bug"],"kricketune":["bug"],"buizel":["water"],"floatzel":["water"],"burmy":["bug"],"wormadam-plant":["bug","grass"],"mothim":["bug","flying"],"geodude":["rock","ground"],"graveler":["rock","ground"],"golem":["rock","ground"],"stantler":["normal"],"wyrdeer":["normal","psychic"],"munchlax":["normal"],"snorlax":["normal"],"paras":["bug","grass"],"parasect":["bug","grass"],"pichu":["electric"],"pikachu":["electric"],"raichu":["electric"],"abra":["psychic"],"kadabra":["psychic"],"alakazam":["psychic"],"chimchar":["fire"],"monferno":["fire","fighting"],"infernape":["fire","fighting"],"buneary":["normal"],"lopunny":["normal"],"cherubi":["grass"],"cherrim":["grass"],"psyduck":["water"],"golduck":["water"],"combee":["bug","flying"],"vespiquen":["bug","flying"],"scyther":["bug","flying"],"kleavor":["bug","rock"],"scizor":["bug","steel"],"heracross":["bug","fighting"],"mime-jr":["psychic","fairy"],"mr-mime":["psychic","fairy"],"aipom":["normal"],"ambipom":["normal"],"magikarp":["water"],"gyarados":["water","flying"],"shellos":["water"],"gastrodon":["water","ground"],"qwilfish-hisui":["dark","poison"],"overqwil":["dark","poison"],"happiny":["normal"],"chansey":["normal"],"blissey":["normal"],"budew":["grass","poison"],"roselia":["grass","poison"],"roserade":["grass","poison"],"carnivine":["grass"],"petilil":["grass"],"lilligant-hisui":["grass","fighting"],"tangela":["grass"],"tangrowth":["grass"],"barboach":["water","ground"],"whiscash":["water","ground"],"croagunk":["poison","fighting"],"toxicroak":["poison","fighting"],"ralts":["psychic","fairy"],"kirlia":["psychic","fairy"],"gardevoir":["psychic","fairy"],"gallade":["psychic","fighting"],"yanma":["bug","flying"],"yanmega":["bug","flying"],"hippopotas":["ground"],"hippowdon":["ground"],"pachirisu":["electric"],"stunky":["poison","dark"],"skuntank":["poison","dark"],"teddiursa":["normal"],"ursaring":["normal"],"ursaluna":["ground","normal"],"goomy":["dragon"],"sliggoo-hisui":["steel","dragon"],"goodra-hisui":["steel","dragon"],"onix":["rock","ground"],"steelix":["steel","ground"],"rhyhorn":["ground","rock"],"rhydon":["ground","rock"],"rhyperior":["ground","rock"],"bonsly":["rock"],"sudowoodo":["rock"],"lickitung":["normal"],"lickilicky":["normal"],"togepi":["fairy"],"togetic":["fairy","flying"],"togekiss":["fairy","flying"],"turtwig":["grass"],"grotle":["grass"],"torterra":["grass","ground"],"porygon":["normal"],"porygon2":["normal"],"porygon-z":["normal"],"gastly":["ghost","poison"],"haunter":["ghost","poison"],"gengar":["ghost","poison"],"spiritomb":["ghost","dark"],"murkrow":["dark","flying"],"honchkrow":["dark","flying"],"unown":["psychic"],"spheal":["ice","water"],"sealeo":["ice","water"],"walrein":["ice","water"],"remoraid":["water"],"octillery":["water"],"skorupi":["poison","bug"],"drapion":["poison","dark"],"growlithe-hisui":["fire","rock"],"arcanine-hisui":["fire","rock"],"glameow":["normal"],"purugly":["normal"],"machop":["fighting"],"machoke":["fighting"],"machamp":["fighting"],"chatot":["normal","flying"],"duskull":["ghost"],"dusclops":["ghost"],"dusknoir":["ghost"],"piplup":["water"],"prinplup":["water"],"empoleon":["water","steel"],"mantyke":["water","flying"],"mantine":["water","flying"],"basculin-white-striped":["water"],"basculegion-male":["water","ghost"],"vulpix":["fire"],"ninetales":["fire"],"tentacool":["water","poison"],"tentacruel":["water","poison"],"finneon":["water"],"lumineon":["water"],"magby":["fire"],"magmar":["fire"],"magmortar":["fire"],"magnemite":["electric","steel"],"magneton":["electric","steel"],"magnezone":["electric","steel"],"bronzor":["steel","psychic"],"bronzong":["steel","psychic"],"elekid":["electric"],"electabuzz":["electric"],"electivire":["electric"],"gligar":["ground","flying"],"gliscor":["ground","flying"],"gible":["dragon","ground"],"gabite":["dragon","ground"],"garchomp":["dragon","ground"],"nosepass":["rock"],"probopass":["rock","steel"],"voltorb-hisui":["electric","grass"],"electrode-hisui":["electric","grass"],"rotom":["electric","ghost"],"chingling":["psychic"],"chimecho":["psychic"],"misdreavus":["ghost"],"mismagius":["ghost"],"cleffa":["fairy"],"clefairy":["fairy"],"clefable":["fairy"],"sneasel-hisui":["fighting","poison"],"sneasler":["fighting","poison"],"weavile":["dark","ice"],"snorunt":["ice"],"glalie":["ice"],"froslass":["ice","ghost"],"cranidos":["rock"],"rampardos":["rock"],"shieldon":["rock","steel"],"bastiodon":["rock","steel"],"swinub":["ice","ground"],"piloswine":["ice","ground"],"mamoswine":["ice","ground"],"bergmite":["ice"],"avalugg-hisui":["ice","rock"],"snover":["grass","ice"],"abomasnow":["grass","ice"],"zorua-hisui":["normal","ghost"],"zoroark-hisui":["normal","ghost"],"rufflet":["normal","flying"],"braviary-hisui":["psychic","flying"],"riolu":["fighting"],"lucario":["fighting","steel"],"uxie":["psychic"],"mesprit":["psychic"],"azelf":["psychic"],"heatran":["fire","steel"],"regigigas":["normal"],"cresselia":["psychic"],"tornadus-incarnate":["flying"],"thundurus-incarnate":["electric","flying"],"landorus-incarnate":["ground","flying"],"enamorus-incarnate":["fairy","flying"],"dialga":["steel","dragon"],"palkia":["water","dragon"],"giratina-altered":["ghost","dragon"],"arceus":["normal"],"phione":["water"],"manaphy":["water"],"shaymin-land":["grass"],"darkrai":["dark"]};
+const FORMAS = {
+  "dialga":[{q:"dialga",art:483,etiqueta:"Forma habitual"},{q:"dialga-origin",art:10245,etiqueta:"Forma origen"}],
+  "palkia":[{q:"palkia",art:484,etiqueta:"Forma habitual"},{q:"palkia-origin",art:10246,etiqueta:"Forma origen"}],
+  "giratina-altered":[{q:"giratina-altered",art:487,etiqueta:"Forma modificada"},{q:"giratina-origin",art:10007,etiqueta:"Forma origen"}],
+  "tornadus-incarnate":[{q:"tornadus-incarnate",art:641,etiqueta:"Forma avatar"},{q:"tornadus-therian",art:10019,etiqueta:"Forma tótem"}],
+  "thundurus-incarnate":[{q:"thundurus-incarnate",art:642,etiqueta:"Forma avatar"},{q:"thundurus-therian",art:10020,etiqueta:"Forma tótem"}],
+  "landorus-incarnate":[{q:"landorus-incarnate",art:645,etiqueta:"Forma avatar"},{q:"landorus-therian",art:10021,etiqueta:"Forma tótem"}],
+  "enamorus-incarnate":[{q:"enamorus-incarnate",art:905,etiqueta:"Forma avatar"},{q:"enamorus-therian",art:10249,etiqueta:"Forma tótem"}],
+  "shaymin-land":[{q:"shaymin-land",art:492,etiqueta:"Forma tierra"},{q:"shaymin-sky",art:10006,etiqueta:"Forma cielo"}],
+  "basculegion-male":[{q:"basculegion-male",art:902,etiqueta:"Macho"},{q:"basculegion-female",art:10248,etiqueta:"Hembra"}],
+  "arceus":[{q:"arceus",art:"493",etiqueta:"Normal",tipo:"normal"},{q:"arceus-fire",art:"493-fire",etiqueta:"Fuego",tipo:"fire"},{q:"arceus-water",art:"493-water",etiqueta:"Agua",tipo:"water"},{q:"arceus-electric",art:"493-electric",etiqueta:"Eléctrico",tipo:"electric"},{q:"arceus-grass",art:"493-grass",etiqueta:"Planta",tipo:"grass"},{q:"arceus-ice",art:"493-ice",etiqueta:"Hielo",tipo:"ice"},{q:"arceus-fighting",art:"493-fighting",etiqueta:"Lucha",tipo:"fighting"},{q:"arceus-poison",art:"493-poison",etiqueta:"Veneno",tipo:"poison"},{q:"arceus-ground",art:"493-ground",etiqueta:"Tierra",tipo:"ground"},{q:"arceus-flying",art:"493-flying",etiqueta:"Volador",tipo:"flying"},{q:"arceus-psychic",art:"493-psychic",etiqueta:"Psíquico",tipo:"psychic"},{q:"arceus-bug",art:"493-bug",etiqueta:"Bicho",tipo:"bug"},{q:"arceus-rock",art:"493-rock",etiqueta:"Roca",tipo:"rock"},{q:"arceus-ghost",art:"493-ghost",etiqueta:"Fantasma",tipo:"ghost"},{q:"arceus-dragon",art:"493-dragon",etiqueta:"Dragón",tipo:"dragon"},{q:"arceus-dark",art:"493-dark",etiqueta:"Siniestro",tipo:"dark"},{q:"arceus-steel",art:"493-steel",etiqueta:"Acero",tipo:"steel"},{q:"arceus-fairy",art:"493-fairy",etiqueta:"Hada",tipo:"fairy"}]
+};
+const NOTA_FORMA = {
+  "dialga-origin":"Forma origen: el aspecto con el que Arceus creó a Dialga. En Hisui la adopta al enfurecerse por la grieta del espacio-tiempo.",
+  "palkia-origin":"Forma origen: el aspecto con el que Arceus creó a Palkia. En Hisui controla el espacio con este cuerpo ancestral.",
+  "giratina-origin":"Forma origen: Giratina adopta este aspecto en el Mundo Distorsión y cuando recupera su poder original.",
+  "shaymin-sky":"Forma cielo: Shaymin cambia al agradecer con el ramo de Gracídea. Pasa a ser de tipo planta y volador.",
+  "tornadus-therian":"Forma tótem de Tornadus, el Pokémon de los tornados de Hisui.",
+  "thundurus-therian":"Forma tótem de Thundurus, el Pokémon de las tormentas de Hisui.",
+  "landorus-therian":"Forma tótem de Landorus, el Pokémon de la fertilidad de Hisui.",
+  "enamorus-therian":"Forma tótem de Enamorus, la Fuerza de la Naturaleza que llega a Hisui en primavera."
+};
+function formasDe(p){ return FORMAS[p.q] || []; }
+function formaActiva(p, formaQ){
+  const lista = formasDe(p);
+  if (!lista.length) return null;
+  return lista.find(f => f.q === formaQ) || lista.find(f => f.q === ((estado.formas || {})[p.q])) || lista[0];
+}
+function artDe(p, forma){ return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/" + (forma ? forma.art : p.art) + ".png"; }
+function textoEs(sp){
+  const entradas = (sp.flavor_text_entries || []).filter(x => x.language && (x.language.name === "es" || x.language.name === "es-419"));
+  const orden = ["legends-arceus","brilliant-diamond","shining-pearl","ultra-sun","ultra-moon","sun","moon","x","y","omega-ruby","alpha-sapphire","black-2","white-2","black","white","heartgold","soulsilver","platinum","diamond","pearl"];
+  const limpio = (t) => String(t || "").replace(/[\f\n\r]/g, " ").replace(/\s+/g, " ").trim();
+  for (const v of orden) {
+    const hit = entradas.find(x => x.version && x.version.name === v && x.language.name === "es") || entradas.find(x => x.version && x.version.name === v);
+    if (hit) return limpio(hit.flavor_text);
+  }
+  return entradas.length ? limpio(entradas[entradas.length - 1].flavor_text) : "";
+}
+function generoEs(sp){
+  const g = (sp.genera || []).find(x => x.language && x.language.name === "es") || (sp.genera || []).find(x => x.language && x.language.name === "es-419");
+  return g ? g.genus : "";
+}
+
+let estado = { nombre:"", grupo:"", frase:"", color:"#c6b27a", papel:"#f4efe4", favorito:"", vistos:{}, tiposVistos:{}, equipo:[null,null,null,null,null,null], cmp:[null,null], aciertos:0, mejor:0, formas:{} };
+let actual = null, filtro = "", quizActual = null, explotando = false;
+function aplicarColor(){
+  const c = /^#[0-9a-fA-F]{6}$/.test(estado.color || "") ? estado.color : "#c6b27a";
+  const papel = /^#[0-9a-fA-F]{6}$/.test(estado.papel || "") ? estado.papel : "#f4efe4";
+  estado.color = c; estado.papel = papel;
+  document.documentElement.style.setProperty("--gold", c);
+  document.documentElement.style.setProperty("--paper", papel);
+  if ($("color")) $("color").value = c;
+  if ($("papel")) $("papel").value = papel;
+  const grupo = (estado.grupo || "Equipo Galaxia").replace(/[<>]/g,"").slice(0,24);
+  $("sello").textContent = grupo + " · 242 registros · formas de Hisui";
+  $("linea").textContent = "Investigador: " + (estado.nombre || "—");
+  $("fraseLinea").textContent = estado.frase || "";
+  document.title = estado.nombre ? "Pokédex de Hisui · " + estado.nombre : "Pokédex de Hisui";
+  const fav = HISUI.find(p => p.q === estado.favorito);
+  $("favorito").innerHTML = fav ? "<img alt='' src='" + art(fav) + "' /><span>Favorito: " + esc(fav.nombre) + "</span>" : "";
+}
+function guardar(){ localStorage.setItem("hisui-dex", JSON.stringify(estado)); }
+function cargar(){ try { estado = Object.assign(estado, JSON.parse(localStorage.getItem("hisui-dex") || "{}")); } catch {} if (!estado.vistos) estado.vistos = {}; if (!estado.tiposVistos) estado.tiposVistos = {}; if (!estado.formas) estado.formas = {}; if (!Array.isArray(estado.equipo) || estado.equipo.length !== 6) estado.equipo = [null,null,null,null,null,null]; if (!Array.isArray(estado.cmp) || estado.cmp.length !== 2) estado.cmp = [null,null]; aplicarColor(); }
+function art(p){ return artDe(p, null); }
+function esc(s){
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function norm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""); }
+function tipo(n){ return TIPOS[n] || [n, "#eee"]; }
+function coma(n){ return Number(n).toFixed(2).replace(".", ","); }
+function nivelDe(q){ return estado.vistos[q] || 0; }
+function rango(){ const n = Object.keys(estado.vistos).length; $("rango").textContent = "Rango: " + (n>=180?"guardián de las tablas":n>=80?"topógrafo":n>=30?"miembro del Equipo Galaxia":n>=8?"ayudante de campo":"aprendiz de campo") + " · " + n + "/242"; pintarInsignias(); }
+function buscarLocal(q){
+  const c = norm(q);
+  if (/^\d+$/.test(String(q).trim())) return HISUI.find(p => p.n === Number(q) || p.id === Number(q));
+  return HISUI.find(p => norm(p.nombre) === c || norm(p.q) === c) || HISUI.find(p => norm(p.nombre).includes(c) || norm(p.q).includes(c));
+}
+function visibles(){ return HISUI.filter(p => !filtro || true); }
+function pintarIndice(){
+  const box = $("indice"); box.innerHTML = "";
+  HISUI.forEach(p => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "entrada" + (actual && actual.q === p.q ? " activo" : ""); b.draggable = true;
+    b.innerHTML = "<small>" + String(p.n).padStart(3,"0") + "</small><img alt='" + esc(p.nombre) + "' loading='lazy' src='" + art(p) + "' /><b>" + esc(p.nombre) + "</b>";
+    b.onclick = () => abrir(p);
+    b.ondragstart = (e) => e.dataTransfer.setData("text/plain", JSON.stringify({q:p.q,nombre:p.nombre,foto:art(p)}));
+    if (filtro) b.hidden = !(TIPOS_DE[p.q] || []).includes(filtro);
+    box.appendChild(b);
+  });
+}
+const memoria = {};
+let pedido = 0;
+async function abrir(p, formaQ){
+  const id = ++pedido;
+  actual = p; $("err").textContent = "";
+  const forma = formaActiva(p, formaQ);
+  if (forma) estado.formas[p.q] = forma.q;
+  if (!estado.vistos[p.q]) estado.vistos[p.q] = 1;
+  guardar(); rango(); pintarIndice();
+  const activa = document.querySelector(".entrada.activo");
+  if (activa) activa.scrollIntoView({block:"nearest"});
+  const consulta = forma && forma.tipo ? p.q : (forma ? forma.q : p.q);
+  if (memoria[consulta]) {
+    pintarFicha(p, memoria[consulta].data, memoria[consulta].desc, memoria[consulta].rate, forma, memoria[consulta].genero, memoria[consulta].habilidades);
+    return;
+  }
+  $("ficha").innerHTML = "<p>Consultando el archivo...</p>";
+  const intentos = [consulta, p.q, p.q + "-altered", p.q + "-incarnate", p.q + "-land", p.q + "-male", p.q + "-plant"];
+  let data = null;
+  for (const nombre of intentos) {
+    try {
+      const res = await fetch("https://pokeapi.co/api/v2/pokemon/" + encodeURIComponent(nombre));
+      if (res.ok) { data = await res.json(); break; }
+    } catch {}
+  }
+  if (id !== pedido) return;
+  if (!data) { $("err").textContent = "No se pudo abrir esa ficha. Revisa tu conexión."; $("ficha").innerHTML = ""; return; }
+  let desc = "Este Pokémon sigue en investigación en los archivos de Hisui.";
+  let rate = null, genero = "";
+  try {
+    const sp = await (await fetch(data.species.url)).json();
+    rate = sp.gender_rate;
+    genero = generoEs(sp);
+    const oficial = textoEs(sp);
+    if (oficial) desc = oficial;
+  } catch {}
+  if (id !== pedido) return;
+  let habilidades = [];
+  try {
+    habilidades = await Promise.all((data.abilities || []).map(async a => {
+      try {
+        const j = await (await fetch(a.ability.url)).json();
+        const es = (j.names || []).find(n => n.language && n.language.name === "es");
+        return (es ? es.name : a.ability.name.replace(/-/g, " ")) + (a.is_hidden ? " (oculta)" : "");
+      } catch { return a.ability.name.replace(/-/g, " "); }
+    }));
+  } catch {}
+  if (id !== pedido) return;
+  memoria[consulta] = { data, desc, rate, genero, habilidades, cadena: await cadenaDe(data) };
+  pintarFicha(p, data, desc, rate, forma, genero, habilidades);
+}
+function pintarFicha(p, data, desc, rate, forma, genero, habilidades){
+  const nv = nivelDe(p.q);
+  const tiposFicha = (forma && forma.tipo) ? [{ type: { name: forma.tipo } }] : (data.types || []);
+  const comidaTipo = (tiposFicha[0] && tiposFicha[0].type && tiposFicha[0].type.name) || "normal";
+  const comida = nv >= 3 ? (COMIDA[comidaTipo] || "bayas") : "Aún sin observación";
+  const objetos = nv >= 4 ? ((data.held_items || []).map(i => i.item.name.replace(/-/g," ")).join(", ") || "Ninguno observado") : "Aún sin observación";
+  let notaForma = forma && NOTA_FORMA[forma.q] ? NOTA_FORMA[forma.q] : "";
+  if (forma && forma.tipo && forma.tipo !== "normal") notaForma = "Con la tabla de " + forma.etiqueta.toLowerCase() + ", Arceus cambia a tipo " + tipo(forma.tipo)[0] + ".";
+  const texto = desc;
+  const macho = rate == null ? true : rate >= 0 && rate < 8;
+  const hembra = rate == null ? true : rate > 0;
+  const foto = artDe(p, forma);
+  const etiqueta = p.forma === "hisui" ? "Forma de Hisui" : (forma ? forma.etiqueta : "Avistado en Hisui");
+  const caja = document.createElement("article");
+  caja.className = "ficha";
+  const stats = (data.stats || []).map(s => {
+    const nombres = {hp:"PS",attack:"Ataque",defense:"Defensa","special-attack":"At. esp.","special-defense":"Def. esp.",speed:"Velocidad"};
+    const v = s.base_stat;
+    return "<div class='stat'><span>" + esc(nombres[s.stat.name] || s.stat.name) + "</span><span class='barra'><i style='width:" + Math.max(6, Math.round(v / 255 * 100)) + "%'></i></span><b>" + v + "</b></div>";
+  }).join("");
+  caja.innerHTML = "<div class='ficha-top'><div><div class='marco'><i class='cinta a'></i><i class='cinta b'></i><div class='foto' id='foto' draggable='true'><img alt='" + esc(p.nombre) + "' src='" + foto + "' /><div class='sexos" + (!macho && !hembra ? " vacio" : "") + "'><i class='" + (macho?"on":"") + "'>♂</i><i class='" + (hembra?"on":"") + "'>♀</i></div></div><div class='forma'>" + esc(etiqueta) + "</div></div></div><div><h2 style='margin:0;font-family:Fraunces,serif'>" + esc(p.nombre) + "</h2><p style='margin:4px 0;color:#8d7048;font-weight:800'>N.º Hisui " + String(p.n).padStart(3,"0") + " · N.º nacional " + p.id + (genero ? " · " + esc(genero) : "") + "</p><div class='formas' id='formas'></div><div class='tipos' id='tiposF'></div><div class='cadena' id='cadena'></div>" + (!macho && !hembra ? "<p class='sinsexo'>Sin sexo</p>" : "") + "<div class='medidas'><span>⚖ " + coma(data.weight/10) + " kg</span><span>△ " + coma(data.height/10) + " m</span></div><div class='cintilla'>Habilidades</div><div class='fila'>" + esc((habilidades || []).join(", ") || "En investigación") + "</div><div class='stats'>" + stats + "</div><div class='cintilla'>Nota de campo</div><div class='fila'>" + esc(comida) + "</div><div class='cintilla'>Objetos de otros registros</div><div class='fila'>" + esc(objetos) + "</div></div></div><p class='nota'>" + esc(texto) + "</p>" + (notaForma ? "<p class='nota'>" + esc(notaForma) + "</p>" : "") + "<div class='progreso'><div style='flex:1'><span class='cintilla'>Nivel de progreso</span><div class='barra'><i style='width:" + (nv*10) + "%'></i></div></div><b>" + nv + "</b></div><div class='acciones'><button class='suave' type='button' id='tarea'>Tarea de campo</button><button type='button' id='alEquipo'>Añadir al equipo</button><button type='button' id='aCmp'>Comparar</button><button type='button' id='fav'>Favorito</button><button type='button' id='prev'>Anterior</button><button type='button' id='next'>Siguiente</button></div>";
+  $("ficha").innerHTML = ""; $("ficha").appendChild(caja);
+  formasDe(p).forEach(f => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = f.etiqueta;
+    if (forma && forma.q === f.q) b.className = "activo";
+    b.onclick = () => abrir(p, f.q);
+    $("formas").appendChild(b);
+  });
+  tiposFicha.forEach(t => {
+    const info = tipo(t.type.name);
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tipo"; b.textContent = info[0]; b.style.background = info[1];
+    b.onmouseenter = (ev) => tip(ev, t.type.name); b.onmouseleave = () => $("tip").hidden = true; b.onclick = (ev) => tip(ev, t.type.name);
+    $("tiposF").appendChild(b);
+  });
+  const guardada = memoria[p.q] || memoria[(forma && forma.q) || ""] || Object.values(memoria).find(x => x && x.data && x.data.name === p.q);
+  const familia = (guardada && guardada.cadena) || [];
+  familia.forEach(nombre => {
+    const familiar = HISUI.find(x => x.q === nombre || x.q.startsWith(nombre + "-"));
+    if (!familiar || !$("cadena")) return;
+    const b = document.createElement("button");
+    b.type = "button";
+    if (familiar.q === p.q) b.className = "activo";
+    b.innerHTML = "<img alt='' src='" + art(familiar) + "' />" + esc(familiar.nombre);
+    b.onclick = () => abrir(familiar);
+    $("cadena").appendChild(b);
+  });
+  const fichaPoke = {q:p.q,forma:forma ? forma.q : "",nombre:p.nombre + (forma && forma.etiqueta && forma.q !== p.q ? " (" + forma.etiqueta + ")" : ""),foto:foto};
+  $("tarea").onclick = () => { estado.vistos[p.q] = Math.min(10, nivelDe(p.q) + 1); guardar(); rango(); pintarFicha(p, data, desc, rate, forma, genero, habilidades); };
+  $("alEquipo").onclick = () => anadir(fichaPoke);
+  $("aCmp").onclick = () => ponerCmp(p.q);
+  $("fav").onclick = () => { estado.favorito = p.q; guardar(); aplicarColor(); $("err").textContent = p.nombre + " es tu favorito."; };
+  (TIPOS_DE[p.q] || []).forEach(t => { estado.tiposVistos[t] = 1; });
+  if (forma && forma.tipo) estado.tiposVistos[forma.tipo] = 1;
+  guardar(); rango();
+  $("foto").ondragstart = (e) => e.dataTransfer.setData("text/plain", JSON.stringify(fichaPoke));
+  $("prev").onclick = () => abrir(HISUI[(p.n + 240) % 242]);
+  $("next").onclick = () => abrir(HISUI[p.n % 242]);
+}
+function tip(ev, nombre){
+  const of = ATAQUE[nombre] || {};
+  const fuerte = [], debil = [];
+  Object.keys(TIPOS).forEach(t => { if (of[t] === 2) fuerte.push(tipo(t)[0]); if ((ATAQUE[t] || {})[nombre] === 2) debil.push(tipo(t)[0]); });
+  const box = $("tip"); box.hidden = false;
+  box.innerHTML = "<b>" + esc(tipo(nombre)[0]) + "</b><br>Golpea fuerte a: " + esc(fuerte.join(", ") || "—") + "<br>Recibe mucho de: " + esc(debil.join(", ") || "—");
+  box.style.left = Math.min(window.innerWidth - 250, ev.clientX + 10) + "px"; box.style.top = Math.min(window.innerHeight - 90, ev.clientY + 10) + "px";
+}
+function anadir(r){
+  if (estado.equipo.some(x => x && x.q === r.q && (x.forma || "") === (r.forma || ""))) { $("err").textContent = "Ya está en el equipo."; return; }
+  const i = estado.equipo.findIndex(x => !x);
+  if (i < 0) { $("err").textContent = "El equipo ya tiene 6 plazas."; return; }
+  estado.equipo[i] = r; guardar(); pintarEquipo();
+}
+function pintarEquipo(){
+  $("equipo").innerHTML = "";
+  estado.equipo.forEach((poke, i) => {
+    const slot = document.createElement("div"); slot.className = "hueco";
+    if (poke) {
+      slot.draggable = true;
+      slot.innerHTML = "<button class='x' type='button'>×</button><img alt='' src='" + esc(poke.foto) + "' /><b>" + esc(poke.nombre) + "</b>";
+      slot.querySelector(".x").onclick = (e) => { e.stopPropagation(); estado.equipo[i] = null; guardar(); pintarEquipo(); };
+      slot.onclick = () => { const p = HISUI.find(x => x.q === poke.q); if (p) abrir(p, poke.forma); };
+      slot.ondragstart = (e) => e.dataTransfer.setData("text/plain", "slot:" + i);
+    } else {
+      slot.textContent = "Plaza " + (i + 1);
+      slot.onclick = () => {
+        if (!actual) { $("err").textContent = "Abre un Pokémon y toca una plaza."; return; }
+        const forma = formaActiva(actual);
+        const foto = artDe(actual, forma);
+        const ficha = {q:actual.q, forma:forma ? forma.q : "", nombre:actual.nombre + (forma && forma.etiqueta && forma.q !== actual.q ? " (" + forma.etiqueta + ")" : ""), foto};
+        if (estado.equipo.some(x => x && x.q === ficha.q && (x.forma || "") === (ficha.forma || ""))) { $("err").textContent = "Ya está en el equipo."; return; }
+        estado.equipo[i] = ficha; $("err").textContent = ""; guardar(); pintarEquipo();
+      };
+    }
+    slot.ondragover = (e) => { e.preventDefault(); slot.classList.add("sobre"); };
+    slot.ondragleave = () => slot.classList.remove("sobre");
+    slot.ondrop = (e) => {
+      e.preventDefault(); slot.classList.remove("sobre");
+      const raw = e.dataTransfer.getData("text/plain");
+      if (raw.startsWith("slot:")) { const from = Number(raw.slice(5)); const tmp = estado.equipo[from]; estado.equipo[from] = estado.equipo[i]; estado.equipo[i] = tmp; }
+      else {
+        let incoming;
+        try { incoming = JSON.parse(raw); } catch { return; }
+        if (estado.equipo.some((x, idx) => x && idx !== i && x.q === incoming.q && (x.forma || "") === (incoming.forma || ""))) { $("err").textContent = "Ya está en el equipo."; return; }
+        estado.equipo[i] = incoming;
+      }
+      guardar(); pintarEquipo();
+    };
+    $("equipo").appendChild(slot);
+  });
+  pintarInsignias();
+}
+function aplicarFiltro(tipoNombre){
+  filtro = filtro === tipoNombre ? "" : tipoNombre;
+  document.querySelectorAll("#tipos .chip").forEach(b => b.classList.toggle("activo", b.dataset.tipo === filtro));
+  pintarIndice();
+  if (!filtro) { $("err").textContent = ""; return; }
+  const n = HISUI.filter(p => (TIPOS_DE[p.q] || []).includes(filtro)).length;
+  $("err").textContent = n + " Pokémon de tipo " + tipo(filtro)[0] + " en Hisui.";
+}
+function nuevaPregunta(){
+  const buena = HISUI[Math.floor(Math.random()*HISUI.length)];
+  const ops = [buena];
+  while (ops.length < 4) { const o = HISUI[Math.floor(Math.random()*HISUI.length)]; if (!ops.some(x => x.q === o.q)) ops.push(o); }
+  ops.sort(() => Math.random() - .5);
+  quizActual = { buena, cerrada:false };
+  $("quizPuntos").textContent = "Aciertos: " + estado.aciertos + " · Mejor: " + (estado.mejor || 0);
+  $("quizFoto").className = "silueta"; $("quizFoto").innerHTML = "<img alt='Silueta' src='" + art(buena) + "' />";
+  $("quizOps").innerHTML = "";
+  ops.forEach((o, i) => { const b = document.createElement("button"); b.type = "button"; b.dataset.q = o.q; b.textContent = (i+1) + ". " + o.nombre; b.onclick = () => responder(o.q, b); $("quizOps").appendChild(b); });
+}
+function responder(q, boton){
+  if (!quizActual || quizActual.cerrada) return;
+  quizActual.cerrada = true; $("quizFoto").classList.add("revela");
+  $("quizOps").querySelectorAll("button").forEach(b => { if (b.dataset.q === quizActual.buena.q) b.classList.add("bien"); });
+  if (q === quizActual.buena.q) { estado.aciertos++; estado.mejor = Math.max(estado.mejor||0, estado.aciertos); }
+  else { boton.classList.add("mal"); estado.aciertos = 0; }
+  guardar(); $("quizPuntos").textContent = "Aciertos: " + estado.aciertos + " · Mejor: " + (estado.mejor || 0); rango();
+}
+const INSIGNIAS = [
+  {id:"treinta", titulo:"Explorador", texto:"Ver 30 Pokémon"},
+  {id:"equipo", titulo:"Escuadra", texto:"Equipo de 6"},
+  {id:"racha", titulo:"Ojo clínico", texto:"5 aciertos seguidos"},
+  {id:"tipos", titulo:"Las 18 tablas", texto:"Mirar los 18 tipos"}
+];
+function pintarInsignias(){
+  if (!$("insignias")) return;
+  const ok = {
+    treinta: Object.keys(estado.vistos).length >= 30,
+    equipo: estado.equipo.filter(Boolean).length >= 6,
+    racha: (estado.mejor || 0) >= 5,
+    tipos: Object.keys(estado.tiposVistos || {}).length >= 18
+  };
+  $("insignias").innerHTML = "";
+  INSIGNIAS.forEach(ins => {
+    const d = document.createElement("div");
+    d.className = "insignia" + (ok[ins.id] ? " gana" : "");
+    d.innerHTML = "<b>" + esc(ins.titulo) + "</b><span>" + esc(ins.texto) + "</span>";
+    $("insignias").appendChild(d);
+  });
+}
+function ponerCmp(q){
+  if (estado.cmp[0] === q) estado.cmp[1] = estado.cmp[1];
+  else if (!estado.cmp[0] || estado.cmp[0] === q) estado.cmp[0] = q;
+  else if (!estado.cmp[1] || estado.cmp[1] === q) estado.cmp[1] = q;
+  else estado.cmp = [estado.cmp[1], q];
+  guardar(); pintarCmp();
+  $("cmp").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+async function datosCmp(q){
+  const p = HISUI.find(x => x.q === q);
+  if (!p) return null;
+  if (memoria[q] && memoria[q].data) return { p, data: memoria[q].data };
+  try {
+    const res = await fetch("https://pokeapi.co/api/v2/pokemon/" + encodeURIComponent(q));
+    if (!res.ok) return { p, data: null };
+    const data = await res.json();
+    memoria[q] = Object.assign(memoria[q] || {}, { data });
+    return { p, data };
+  } catch { return { p, data: null }; }
+}
+async function pintarCmp(){
+  const box = $("cmp"); if (!box) return;
+  box.innerHTML = "";
+  const lados = await Promise.all(estado.cmp.map(q => q ? datosCmp(q) : null));
+  const statsN = ["hp","attack","defense","special-attack","special-defense","speed"];
+  const nombres = {hp:"PS",attack:"Ataque",defense:"Defensa","special-attack":"At. esp.","special-defense":"Def. esp.",speed:"Velocidad"};
+  const valor = (lado, clave) => {
+    if (!lado || !lado.data) return 0;
+    if (clave === "kg") return lado.data.weight / 10;
+    if (clave === "m") return lado.data.height / 10;
+    const s = (lado.data.stats || []).find(x => x.stat.name === clave);
+    return s ? s.base_stat : 0;
+  };
+  lados.forEach((lado, i) => {
+    const col = document.createElement("div"); col.className = "lado";
+    if (!lado) {
+      col.innerHTML = "<b>Columna " + (i + 1) + "</b><p>Abierta vacía</p>";
+    } else {
+      const filas = ["kg","m"].concat(statsN).map(clave => {
+        const yo = valor(lado, clave);
+        const otro = valor(lados[1 - i], clave);
+        const etiqueta = clave === "kg" ? "Peso" : clave === "m" ? "Altura" : nombres[clave];
+        const texto = clave === "kg" ? coma(yo) + " kg" : clave === "m" ? coma(yo) + " m" : yo;
+        return "<div class='stat'><span>" + etiqueta + "</span><b class='" + (otro && yo > otro ? "gana" : "") + "'>" + texto + "</b></div>";
+      }).join("");
+      col.innerHTML = "<img alt='' src='" + art(lado.p) + "' /><b>" + esc(lado.p.nombre) + "</b>" + filas;
+    }
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = lado ? "Quitar" : "Poner el abierto";
+    btn.onclick = () => {
+      if (lado) { estado.cmp[i] = null; guardar(); pintarCmp(); return; }
+      if (!actual) { $("err").textContent = "Abre un Pokémon para compararlo."; return; }
+      estado.cmp[i] = actual.q; $("err").textContent = ""; guardar(); pintarCmp();
+    };
+    col.appendChild(btn);
+    box.appendChild(col);
+  });
+}
+function cristal(gema){
+  const w = 90, h = 188, cv = document.createElement("canvas");
+  cv.width = w; cv.height = h;
+  const x = cv.getContext("2d");
+  x.beginPath();
+  x.moveTo(w/2, 5); x.lineTo(w-12, 38); x.lineTo(w-16, h-42); x.lineTo(w/2, h-5); x.lineTo(16, h-42); x.lineTo(12, 38); x.closePath();
+  const g = x.createLinearGradient(8, 0, w-8, h);
+  g.addColorStop(0, "rgba(255,255,255,.96)");
+  g.addColorStop(.2, "rgba(255,196,226,.8)");
+  g.addColorStop(.48, gema);
+  g.addColorStop(.74, "rgba(176,255,206,.82)");
+  g.addColorStop(1, "rgba(255,255,255,.94)");
+  x.fillStyle = g; x.fill();
+  x.lineWidth = 5; x.strokeStyle = "rgba(255,255,255,.95)"; x.stroke();
+  x.beginPath();
+  x.moveTo(w/2, 30); x.lineTo(w-26, 54); x.lineTo(w-30, h-56); x.lineTo(w/2, h-30); x.lineTo(30, h-56); x.lineTo(26, 54); x.closePath();
+  x.lineWidth = 2; x.strokeStyle = "rgba(255,255,255,.6)"; x.stroke();
+  x.beginPath(); x.ellipse(w/2, h*.47, 13, 30, 0, 0, Math.PI*2); x.fillStyle = gema; x.fill();
+  x.beginPath(); x.ellipse(w*.4, h*.32, 6, 16, -.45, 0, Math.PI*2); x.fillStyle = "rgba(255,255,255,.78)"; x.fill();
+  return cv.toDataURL();
+}
+function ruedaDorada(){
+  const s = 440, cv = document.createElement("canvas");
+  cv.width = s; cv.height = s;
+  const x = cv.getContext("2d");
+  x.translate(s/2, s/2);
+  const glow = x.createRadialGradient(0,0,20,0,0,200);
+  glow.addColorStop(0, "rgba(255,226,110,.95)");
+  glow.addColorStop(.4, "rgba(255,164,32,.5)");
+  glow.addColorStop(1, "rgba(255,140,0,0)");
+  x.fillStyle = glow; x.beginPath(); x.arc(0,0,200,0,Math.PI*2); x.fill();
+  x.strokeStyle = "#ffe27a"; x.lineWidth = 18; x.lineCap = "round"; x.shadowColor = "#ffb000"; x.shadowBlur = 16;
+  for (let i=0;i<4;i++){ x.beginPath(); x.arc(0,0,124, i*Math.PI/2+.42, (i+1)*Math.PI/2-.16); x.stroke(); }
+  x.fillStyle = "#ffd24a";
+  for (let i=0;i<4;i++){
+    x.save(); x.rotate(i*Math.PI/2 + Math.PI/4);
+    x.beginPath(); x.moveTo(0,-168); x.lineTo(26,-78); x.lineTo(0,-36); x.lineTo(-26,-78); x.closePath(); x.fill();
+    x.restore();
+  }
+  return cv.toDataURL();
+}
+function lanzar(){
+  if (explotando) return; explotando = true;
+  $("intro").classList.add("boom","shake"); $("orbe").classList.add("estalla");
+  for (let i=0;i<3;i++){ const o=document.createElement("div"); o.className="onda"; $("escena").appendChild(o); setTimeout(()=>o.classList.add("sale"), i*140); }
+  for (let i=0;i<24;i++){ const c=document.createElement("div"); c.className="chispa"; const a=i/24*Math.PI*2; c.style.setProperty("--x",(Math.cos(a)*180)+"px"); c.style.setProperty("--y",(Math.sin(a)*180)+"px"); $("escena").appendChild(c); setTimeout(()=>c.classList.add("sale"), i*16); }
+  const rueda=document.createElement("div"); rueda.className="rueda"; rueda.setAttribute("aria-hidden","true"); rueda.style.backgroundImage="url("+ruedaDorada()+")"; $("escena").appendChild(rueda); setTimeout(()=>rueda.classList.add("sale"), 40);
+  const aura=document.createElement("div"); aura.className="aura"; aura.setAttribute("aria-hidden","true"); $("escena").appendChild(aura); setTimeout(()=>aura.classList.add("sale"), 20);
+  const img=document.createElement("img"); img.className="arceus-aparece"; img.alt=""; img.src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/493.png"; $("escena").appendChild(img); setTimeout(()=>img.classList.add("sale"), 180);
+  const gemas=["#7dffb0","#ffe07a","#ffb0d4","#9fd8ff","#d2b0ff","#fff0a0","#8ef0c8","#ffc4a8"];
+  const lado=Math.min($("escena").clientWidth,$("escena").clientHeight); const radio=Math.max(132, Math.min(248, lado*0.38));
+  for (let i=0;i<16;i++){
+    const ang=(Math.PI*2*i)/16-Math.PI/2;
+    const el=document.createElement("div"); el.className="placa"; el.setAttribute("aria-hidden","true");
+    el.style.backgroundImage="url("+cristal(gemas[i%gemas.length])+")";
+    el.style.setProperty("--g",(ang*180/Math.PI+90)+"deg");
+    el.style.setProperty("--x",Math.cos(ang)*radio+"px");
+    el.style.setProperty("--y",Math.sin(ang)*radio+"px");
+    $("escena").appendChild(el); setTimeout(()=>el.classList.add("sale"), 80+i*36);
+  }
+  setTimeout(()=>{ $("intro").classList.add("hide"); $("app").classList.add("on"); if (!actual) abrir(HISUI[150]); }, 2800);
+}
+function reiniciar(){ explotando=false; $("escena").querySelectorAll(".rueda,.arceus-aparece,.placa,.onda,.chispa,.aura").forEach(n=>n.remove()); $("orbe").classList.remove("estalla"); $("intro").classList.remove("boom","shake","hide"); $("app").classList.remove("on"); }
+Object.keys(TIPOS).forEach(t => { const b=document.createElement("button"); b.type="button"; b.className="chip"; b.dataset.tipo=t; b.textContent=tipo(t)[0]; b.style.background=tipo(t)[1]; b.onclick=()=>aplicarFiltro(t); $("tipos").appendChild(b); });
+$("orbe").onclick = lanzar;
+$("orbe").addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); lanzar(); } });
+
+let grietaActual = null;
+async function cadenaDe(data){
+  try {
+    const sp = await (await fetch(data.species.url)).json();
+    if (!sp.evolution_chain) return [];
+    const chain = await (await fetch(sp.evolution_chain.url)).json();
+    const nombres = [];
+    const walk = (nodo) => { if (!nodo) return; nombres.push(nodo.species.name); (nodo.evolves_to || []).forEach(walk); };
+    walk(chain.chain);
+    return nombres.filter(n => HISUI.some(p => p.q === n || p.q.startsWith(n + "-")));
+  } catch { return []; }
+}
+function nuevaGrieta(){
+  grietaActual = HISUI[Math.floor(Math.random()*HISUI.length)];
+  $("grietaTxt").textContent = "Algo cruza la luz...";
+  $("grietaFoto").className = "portal";
+  $("grietaFoto").innerHTML = "<img alt='Silueta de la grieta' src='" + art(grietaActual) + "' />";
+  setTimeout(() => { if (!grietaActual) return; $("grietaFoto").classList.add("revela"); $("grietaTxt").textContent = grietaActual.nombre + " cruzó la grieta."; }, 700);
+}
+$("replay").onclick = reiniciar;
+$("grietaBtn").onclick = () => { $("grieta").classList.add("on"); nuevaGrieta(); };
+$("grietaCerrar").onclick = () => $("grieta").classList.remove("on");
+$("grietaOtra").onclick = nuevaGrieta;
+$("grietaAbrir").onclick = () => { if (!grietaActual) return; $("grieta").classList.remove("on"); abrir(grietaActual); };
+
+$("go").onclick = () => {
+  const q = $("q").value.trim();
+  if (!q) { $("err").textContent = "Escribe un nombre o un número de Hisui."; return; }
+  if (!/^[\p{L}\p{N}\s.'’-]+$/u.test(q)) { $("err").textContent = "Usa letras, números o un guion."; return; }
+  const p = buscarLocal(q);
+  if (!p) { $("err").textContent = "Ese Pokémon no está en los 242 de Hisui."; return; }
+  filtro = "";
+  document.querySelectorAll("#tipos .chip").forEach(b => b.classList.remove("activo"));
+  abrir(p);
+};
+$("q").addEventListener("keydown", e => { if (e.key==="Enter") $("go").click(); });
+$("nombre").addEventListener("input", () => { estado.nombre = $("nombre").value.replace(/[<>]/g,"").slice(0,24); aplicarColor(); guardar(); });
+$("grupo").addEventListener("input", () => { estado.grupo = $("grupo").value.replace(/[<>]/g,"").slice(0,24); aplicarColor(); guardar(); });
+$("frase").addEventListener("input", () => { estado.frase = $("frase").value.replace(/[<>]/g,"").slice(0,42); aplicarColor(); guardar(); });
+$("color").addEventListener("input", () => { estado.color = $("color").value; aplicarColor(); guardar(); });
+$("papel").addEventListener("input", () => { estado.papel = $("papel").value; aplicarColor(); guardar(); });
+$("quizBtn").onclick = () => { $("quiz").classList.add("on"); nuevaPregunta(); };
+$("quizCerrar").onclick = () => $("quiz").classList.remove("on");
+$("quizNext").onclick = nuevaPregunta;
+document.addEventListener("keydown", e => {
+  const tag = document.activeElement && document.activeElement.tagName;
+  if ((e.key==="Enter" || e.key===" ") && !$("intro").classList.contains("hide") && tag!=="INPUT") { e.preventDefault(); lanzar(); return; }
+  if (e.key==="/" && tag!=="INPUT") { e.preventDefault(); $("q").focus(); }
+  if (e.key==="Escape") { $("quiz").classList.remove("on"); $("grieta").classList.remove("on"); }
+  if (tag==="INPUT") return;
+  if ($("quiz").classList.contains("on") && quizActual && !quizActual.cerrada && "1234".includes(e.key)) { const b=$("quizOps").querySelectorAll("button")[Number(e.key)-1]; if (b) b.click(); }
+  if (!$("intro").classList.contains("hide") || !actual) return;
+  if (e.key==="ArrowRight") abrir(HISUI[actual.n % 242]);
+  if (e.key==="ArrowLeft") abrir(HISUI[(actual.n + 240) % 242]);
+});
+cargar(); rango(); pintarIndice(); pintarEquipo(); pintarCmp();
+$("nombre").value = estado.nombre || ""; $("grupo").value = estado.grupo || ""; $("frase").value = estado.frase || ""; aplicarColor();
+</script>
+</body>
+</html>
